@@ -1,17 +1,32 @@
 import React, {useEffect, useState} from 'react';
 import { View, Text, SafeAreaView, Pressable, TextInput, Alert } from 'react-native';
+import { nanoid } from 'nanoid'
+import supabase from "../../utils/supabase";
 
-function CreateScreen({navigation}) {
+const CreateScreen = ({navigation}) => {
     const [usrname, onChangeUsrname] = React.useState('');
+    const gameid = nanoid(6);
 
-    const handleGameCreation = () => {
+    const insertGameid = async () => {
+      const { data, error } = await supabase
+        .from('playerids')
+        .insert([{gameid: gameid, name: usrname, playerid: nanoid()}])
+        .select()
+      if (error) {
+        console.error("error:" + error.message);
+        return;
+      }
+    };
+
+    const handleGameCreation = async () => {
       if (usrname.trim() === '') {
         Alert.alert('Warning', 'Please input username');
       } else {
-        navigation.navigate('Host')
+        await insertGameid();
+        navigation.navigate('Host', {gameid: gameid, usrname: usrname});
       }
     };
-    
+  
     return (
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <View>
@@ -22,7 +37,7 @@ function CreateScreen({navigation}) {
           <TextInput
             placeholder="Enter your username"
             placeholderTextColor="#C7C7CD"
-            onChangeText={onChangeUsrname}
+            onChangeText={text=>onChangeUsrname(text)}
             value={usrname}
           />
           <Pressable onPress={handleGameCreation} style={{backgroundColor: "#841584", padding: 10, margin: 10}}>

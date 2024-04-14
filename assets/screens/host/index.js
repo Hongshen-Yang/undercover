@@ -1,30 +1,47 @@
 import React, {useState, useEffect} from 'react';
 import { View, Text, SafeAreaView, Pressable, ScrollView, FlatList } from 'react-native';
-import { nanoid } from 'nanoid'
 import supabase from "../../utils/supabase";
 
-const HostScreen = ({navigation}) => {
+const HostScreen = ({route, navigation}) => {
+  const { gameid, usrname } = route.params;
   const [playerids, setPlayerids] =useState(null)
+  const fetchPlayerids = async () => {
+    const { data, error } = await supabase
+      .from('playerids')
+      .select('*')
+      .eq('gameid', gameid)
+      .order('last_modify', { ascending: true })
+    if (error) {
+      setPlayerids(null);
+      console.error("error:" + error.message);
+      return;
+    }
+
+    if (data) {
+      setPlayerids(data);
+    }
+  };
 
   useEffect(() => {
-    const fetchPlayerids = async () => {
-        const { data, error } = await supabase
-          .from('playerids')
-          .select('*');
-
-        if (error) {
-          setPlayerids(null);
-          console.error("error:" + error.message);
-          return;
-        }
-
-        if (data) {
-          setPlayerids(data);
-          console.log(data)
-        }
-      };
     fetchPlayerids();
   }, []);
+
+  const deletePlayerid = async () => {
+    const { data, error } = await supabase
+      .from('playerids')
+      .delete()
+      .eq('name', usrname)
+      .eq('gameid', gameid)
+    if (error) {
+      console.error("error:" + error.message);
+      return;
+    }
+    deletePlayerid();
+  }
+
+  const upsertIsPrep = async () => {
+    
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -33,10 +50,10 @@ const HostScreen = ({navigation}) => {
       </View>
       <View>
         <Text>Game ID</Text>
-        <Text>{nanoid(8)}</Text>
+        <Text>{gameid}</Text>
       </View>
       <View>
-        <Text>Total {playerids ? playerids.length : ""} People</Text>
+        <Text> {playerids ? "Total " + playerids.length + " Players": ""}</Text>
       </View>
       <ScrollView>
         <FlatList
@@ -50,6 +67,11 @@ const HostScreen = ({navigation}) => {
         />
     </ScrollView>
     <View>
+      <Pressable onPress={fetchPlayerids} style={{backgroundColor: "#841584", padding: 10, margin: 10}}>
+        <Text style={{color: "white"}}>Refresh</Text>
+      </Pressable>
+    </View>
+    <View>
       <Pressable 
         onPress={() => navigation.navigate('Game')}
         style={{backgroundColor: "#841584", padding: 10, margin: 10}}
@@ -59,7 +81,10 @@ const HostScreen = ({navigation}) => {
     </View>
     <View>
       <Pressable 
-        onPress={() => navigation.navigate('Home')}
+        onPress={() => {
+          deletePlayerid(); 
+          navigation.navigate('Home');
+        }}
         style={{backgroundColor: "#841584", padding: 10, margin: 10}}
       >
         <Text style={{color: "white"}}>Cancel</Text>
