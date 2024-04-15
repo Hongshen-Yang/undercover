@@ -1,16 +1,16 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { View, Text, SafeAreaView, Pressable, TextInput, Alert } from 'react-native';
 import { nanoid } from 'nanoid'
 import supabase from "../../utils/supabase";
 
 const JoinScreen = ({navigation}) => {
-    const [gameid, onChangeGameid] = React.useState('');
-    const [usrname, onChangeUsrname] = React.useState('');
+    const [gameid, onChangeGameid] = useState('');
+    const [usrname, onChangeUsrname] = useState('');
 
     const insertPlayerid = async () => {
       const { data, error } = await supabase
         .from('playerids')
-        .insert([{gameid: gameid, name: usrname, playerid: nanoid()}])
+        .insert([{gameid: gameid, name: usrname}])
         .select()
       if (error) {
         console.error("error:" + error.message);
@@ -19,25 +19,21 @@ const JoinScreen = ({navigation}) => {
     };
     
     const checkGameid = async () => {
-      const { data, error } = await supabase
-        .from('playerids')
-        .select('*')
-        .eq('gameid', gameid)
-
-      if (error) {
-        console.error("error:" + error.message);
-        return false;
-      }
-
       if (!usrname) {
         Alert.alert("Please fill in username");
         return false;
       }
-    
+      const { data, error } = await supabase
+        .from('playerids')
+        .select('*')
+        .eq('gameid', gameid)
+      if (error) {
+        console.error("error:" + error.message);
+        return false;
+      }
       if (data) {
-        console.log(data);
         if (data.length === 0 || usrname === null) {
-          Alert.alert("Please fill in gameid and username");
+          Alert.alert("Please fill in correct gameid and username");
         } else {
           const duplicateUser = data.some(player => player.name === usrname);
           if (duplicateUser) {

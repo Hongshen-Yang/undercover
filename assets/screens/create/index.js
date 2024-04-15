@@ -10,7 +10,7 @@ const CreateScreen = ({navigation}) => {
     const insertGameid = async () => {
       const { data, error } = await supabase
         .from('playerids')
-        .insert([{gameid: gameid, name: usrname, playerid: nanoid()}])
+        .insert([{gameid: gameid, name: usrname}])
         .select()
       if (error) {
         console.error("error:" + error.message);

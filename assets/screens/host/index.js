@@ -4,7 +4,9 @@ import supabase from "../../utils/supabase";
 
 const HostScreen = ({route, navigation}) => {
   const { gameid, usrname } = route.params;
-  const [playerids, setPlayerids] =useState(null)
+  const [playerids, setPlayerids] = useState(null)
+  const [prep, setPrep] = useState(false)
+
   const fetchPlayerids = async () => {
     const { data, error } = await supabase
       .from('playerids')
@@ -16,15 +18,41 @@ const HostScreen = ({route, navigation}) => {
       console.error("error:" + error.message);
       return;
     }
-
     if (data) {
       setPlayerids(data);
+
+      let player = data.find(player => player.name === usrname);
+      setPrep(player ? player.isprep : false);
     }
   };
 
   useEffect(() => {
     fetchPlayerids();
+    const test = supabase.channel('custom-filter-channel')
+      .on(
+        'postgres_changes',
+        {event: '*', schema: 'public', table: 'playerids', filter: 'gameid=eq.'+gameid},
+        (payload) => {fetchPlayerids();}
+      )
+      .subscribe();
+  return () => {supabase.removeSubscription(subscription);};
   }, []);
+
+  const upsertIsprep = async () => {
+    const { data, error } = await supabase
+      .from('playerids')
+      .upsert({isprep: true})
+      .eq('gameid', gameid)
+      .eq('name', usrname)
+      .select()
+    if (data) {
+      setPrep(true);
+    }
+    if (error) {
+      console.error("error:" + error.message);
+      return;
+    }
+  }
 
   const deletePlayerid = async () => {
     const { data, error } = await supabase
@@ -36,11 +64,6 @@ const HostScreen = ({route, navigation}) => {
       console.error("error:" + error.message);
       return;
     }
-    deletePlayerid();
-  }
-
-  const upsertIsPrep = async () => {
-    
   }
 
   return (
@@ -60,25 +83,21 @@ const HostScreen = ({route, navigation}) => {
           data={playerids}
           renderItem={({item}) => 
             <View>
-              <Text>{item.name}</Text>
+              <Text>{item.name} {item.isprep ? "\u2713" : ""}</Text>
             </View>
           }
           keyExtractor={item => item.id}
         />
     </ScrollView>
-    <View>
-      <Pressable onPress={fetchPlayerids} style={{backgroundColor: "#841584", padding: 10, margin: 10}}>
-        <Text style={{color: "white"}}>Refresh</Text>
-      </Pressable>
-    </View>
-    <View>
+    {/* <View>
       <Pressable 
-        onPress={() => navigation.navigate('Game')}
+        onPress={upsertIsprep}
+        disabled={prep}
         style={{backgroundColor: "#841584", padding: 10, margin: 10}}
       >
-        <Text style={{color: "white"}}>Start</Text>
+        <Text style={{color: "white"}}>{prep ? "Waiting..." : "Start"}</Text>
       </Pressable>
-    </View>
+    </View> */}
     <View>
       <Pressable 
         onPress={() => {
