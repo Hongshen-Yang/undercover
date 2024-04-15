@@ -83,21 +83,23 @@ const HostScreen = ({route, navigation}) => {
           data={playerids}
           renderItem={({item}) => 
             <View>
-              <Text>{item.name} {item.isprep ? "\u2713" : ""}</Text>
+              <Text style={{ color: usrname === item.name ? 'blue' : 'black' }}>
+                {item.name} {item.isprep ? "\u2713" : ""}
+              </Text>
             </View>
           }
           keyExtractor={item => item.id}
         />
     </ScrollView>
-    {/* <View>
+    <View>
       <Pressable 
-        onPress={upsertIsprep}
+        onPress={() => {}}
         disabled={prep}
         style={{backgroundColor: "#841584", padding: 10, margin: 10}}
       >
         <Text style={{color: "white"}}>{prep ? "Waiting..." : "Start"}</Text>
       </Pressable>
-    </View> */}
+    </View>
     <View>
       <Pressable 
         onPress={() => {
