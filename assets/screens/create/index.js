@@ -23,7 +23,7 @@ const CreateScreen = ({navigation}) => {
         Alert.alert('Warning', 'Please input username');
       } else {
         await insertGameid();
-        navigation.navigate('Host', {gameid: gameid, usrname: usrname});
+        navigation.navigate('Host', {gameid: gameid, usrname: usrname, ishost: true});
       }
     };
   

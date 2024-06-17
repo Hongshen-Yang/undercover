@@ -40,7 +40,7 @@ const JoinScreen = ({navigation}) => {
             Alert.alert("Username already exists in this game");
           } else {
             await insertPlayerid();
-            navigation.navigate('Host', {gameid: gameid, usrname: usrname});
+            navigation.navigate('Host', {gameid: gameid, usrname: usrname, ishost: false});
           }
         }
       }

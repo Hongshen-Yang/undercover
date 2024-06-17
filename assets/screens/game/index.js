@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, SafeAreaView, Pressable, ScrollView } from 'react-native';
 
-function GameScreen({navigation}) {
+const GameScreen = ({route, navigation}) => {
+  const {gameid, usrname, ishost} = route.params
     return (
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <View>
           <Text>Undercover</Text>
         </View>
         <View>
-          <Text>You are an Undercover</Text>
+          <Text>You are an Undercover agent</Text>
           </View>
         <View>
           <Text>Keyword</Text>

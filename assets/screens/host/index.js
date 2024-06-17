@@ -1,10 +1,13 @@
 import React, {useState, useEffect} from 'react';
 import { View, Text, SafeAreaView, Pressable, ScrollView, FlatList } from 'react-native';
+import { nanoid } from 'nanoid'
+import Slider from '@react-native-community/slider';
 import supabase from "../../utils/supabase";
 
 const HostScreen = ({route, navigation}) => {
-  const { gameid, usrname } = route.params;
+  const { gameid, usrname, ishost } = route.params;
   const [playerids, setPlayerids] = useState(null)
+  const [agentCount, setAgentCount] = useState(1);
   const [prep, setPrep] = useState(false)
 
   const fetchPlayerids = async () => {
@@ -20,28 +23,15 @@ const HostScreen = ({route, navigation}) => {
     }
     if (data) {
       setPlayerids(data);
-
       let player = data.find(player => player.name === usrname);
       setPrep(player ? player.isprep : false);
     }
   };
 
-  useEffect(() => {
-    fetchPlayerids();
-    const test = supabase.channel('custom-filter-channel')
-      .on(
-        'postgres_changes',
-        {event: '*', schema: 'public', table: 'playerids', filter: 'gameid=eq.'+gameid},
-        (payload) => {fetchPlayerids();}
-      )
-      .subscribe();
-  return () => {supabase.removeSubscription(subscription);};
-  }, []);
-
-  const upsertIsprep = async () => {
+  const updateIsprep = async () => {
     const { data, error } = await supabase
       .from('playerids')
-      .upsert({isprep: true})
+      .update({isprep: true})
       .eq('gameid', gameid)
       .eq('name', usrname)
       .select()
@@ -66,6 +56,77 @@ const HostScreen = ({route, navigation}) => {
     }
   }
 
+  const handleGameCreation = async () => {
+    const 
+    nextgameid = nanoid(6);
+    const { data, error } = await supabase
+      .from('games')
+      .insert([{gameid: nextgameid, name: nanoid(6), isagent: false, keyword: nanoid(6)}])
+      .select()
+    if (data) {
+      navigation.navigate('Game', {gameid: gameid, usrname: usrname, ishost: ishost});
+    }
+    if (error) {
+      console.error("error:" + error.message);
+      return;
+    }
+  }
+
+  const AgentSlider = () => {
+    if (playerids && playerids.length > 1 && true) {
+      return (
+        <View>
+          <Text>There will be {agentCount} agent</Text>
+          <Slider
+            style={{width: 200, height: 40}}
+            minimumValue={1}
+            maximumValue={Math.floor((playerids.length-1)/2)}
+            minimumTrackTintColor="#FFFFFF"
+            maximumTrackTintColor="#000000"
+            onValueChange={value => setAgentCount(value)}
+            value={Math.floor(playerids.length/3)}
+            step={1}
+          />
+        </View>
+      );
+    }
+  }
+
+  const StartButton = () => {
+    if (playerids && playerids.length > 1 && true) {
+      let isDisabled = playerids.length < 3 || !playerids.every(player => player.isprep);
+      return (
+        <View>
+          <Pressable
+            onPress={handleGameCreation}
+            disabled={isDisabled}
+            style={{backgroundColor: isDisabled ? 'grey' : '#841584', padding: 10, margin: 10}}
+          >
+            <Text style={{color: "white"}}>Start</Text>
+          </Pressable>
+        </View>
+      )
+    }
+  }
+
+  useEffect(() => {
+    fetchPlayerids();
+    const subscription = supabase.channel('custom-filter-channel')
+      .on(
+        'postgres_changes',
+        {event: '*', schema: 'public', table: 'playerids', filter: 'gameid=eq.'+gameid},
+        () => {fetchPlayerids();}
+      )
+      .subscribe();
+  return;
+  }, []);
+
+  useEffect(() => {
+    if (playerids && playerids.length > 0) {
+    setAgentCount(Math.floor(playerids.length/3));
+    }
+  }, [playerids]);
+
   return (
     <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <View>
@@ -84,20 +145,22 @@ const HostScreen = ({route, navigation}) => {
           renderItem={({item}) => 
             <View>
               <Text style={{ color: usrname === item.name ? 'blue' : 'black' }}>
-                {item.name} {item.isprep ? "\u2713" : ""}
+                {item.name} {item.isprep ? "✔" : ""}
               </Text>
             </View>
           }
           keyExtractor={item => item.id}
         />
     </ScrollView>
+    {AgentSlider()}
+    {StartButton()}
     <View>
       <Pressable 
-        onPress={() => {}}
+        onPress={updateIsprep}
         disabled={prep}
-        style={{backgroundColor: "#841584", padding: 10, margin: 10}}
+        style={{backgroundColor: prep ? 'grey' : '#841584', padding: 10, margin: 10}}
       >
-        <Text style={{color: "white"}}>{prep ? "Waiting..." : "Start"}</Text>
+        <Text style={{color: "white"}}>{prep ? "Waiting..." : "I'm ready!"}</Text>
       </Pressable>
     </View>
     <View>
