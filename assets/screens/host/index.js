@@ -3,6 +3,7 @@ import { View, Text, SafeAreaView, Pressable, ScrollView, FlatList } from 'react
 import { nanoid } from 'nanoid'
 import Slider from '@react-native-community/slider';
 import supabase from "../../utils/supabase";
+import db from '../../../assets/db.json';
 
 const HostScreen = ({route, navigation}) => {
   const { gameid, usrname, ishost } = route.params;
@@ -15,7 +16,6 @@ const HostScreen = ({route, navigation}) => {
       .from('playerids')
       .select('*')
       .eq('gameid', gameid)
-      .order('last_modify', { ascending: true })
     if (error) {
       setPlayerids(null);
       console.error("error:" + error.message);
@@ -55,20 +55,37 @@ const HostScreen = ({route, navigation}) => {
       return;
     }
   }
-
   const handleGameCreation = async () => {
-    const 
-    nextgameid = nanoid(6);
+
+    const keywordDraw = Math.floor(Math.random()*db.length);
     const { data, error } = await supabase
-      .from('games')
-      .insert([{gameid: nextgameid, name: nanoid(6), isagent: false, keyword: nanoid(6)}])
-      .select()
-    if (data) {
-      navigation.navigate('Game', {gameid: gameid, usrname: usrname, ishost: ishost});
-    }
+      .from('playerids')
+      .update([{isagent:false, keyword: keywordDraw}])
+      .eq('gameid', gameid)
+      .select('id')
+
     if (error) {
       console.error("error:" + error.message);
       return;
+    }
+  
+    const shuffled = playerids.sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, agentCount).map(player => player.id);
+
+    const {data:data2, error:error2} = await supabase
+      .from('playerids')
+      .update({isagent: true})
+      .in('id', selected)
+      .eq('gameid', gameid)
+      .select();
+    
+    if (error2) {
+      console.error("error:" + error2.message);
+      return;
+    }
+  
+    if (data2) {
+      navigation.navigate('Game', { gameid: gameid, usrname: usrname, ishost: ishost });
     }
   }
 
